@@ -10,7 +10,7 @@ Tag any serialized field with `[BuildCheckField]`, open **Window → Build Check
 
 ## Install
 
-In Unity, open **Window → Package Manager** → **+ ▾** → **Add package from git URL** and paste your repository URL, or use **Add package from disk** to point at a local checkout.
+In Unity, open **Window → Package Manager** → **+ ▾** → **Add package from git URL** and paste `https://github.com/PrinceGamedev/Build-Check-List.git `, or use **Add package from disk** to point at a local checkout.
 
 ## Usage
 
