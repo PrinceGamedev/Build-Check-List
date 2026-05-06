@@ -29,6 +29,8 @@ namespace Gameyogi.BuildChecklist.Editor.Build
                 return;
             }
 
+            SelectBuildPanel(rules);
+
             UnityEngine.Debug.Log($"[Build Checklist] Running {rules.activePanel} panel.");
 
             var results = RuleEvaluator.EvaluateAll(rules, EvaluationOptions.BuildPreprocess);
@@ -54,6 +56,32 @@ namespace Gameyogi.BuildChecklist.Editor.Build
                     $"Build Checklist: {blocking} rule(s) failed with Error severity. " +
                     "Open Window → Build Checklist for details.");
             }
+        }
+
+        private static void SelectBuildPanel(BuildChecklistRules rules)
+        {
+            if (rules == null || UnityEngine.Application.isBatchMode)
+                return;
+
+            int choice = EditorUtility.DisplayDialogComplex(
+                "Build Checklist",
+                "Which panel do you want to use for this build?",
+                "Development",
+                "Debug",
+                "Release");
+
+            var selectedPanel = choice == 1
+                ? BuildCheckPanel.Debug
+                : choice == 2
+                    ? BuildCheckPanel.Release
+                    : BuildCheckPanel.Development;
+
+            if (rules.activePanel == selectedPanel)
+                return;
+
+            rules.activePanel = selectedPanel;
+            EditorUtility.SetDirty(rules);
+            AssetDatabase.SaveAssetIfDirty(rules);
         }
     }
 }
