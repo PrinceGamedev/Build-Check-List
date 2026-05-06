@@ -1,0 +1,27 @@
+{
+  "name": "com.gameyogi.buildchecklist",
+  "version": "1.5.0",
+  "displayName": "Build Checklist",
+  "description": "Attribute-driven pre-build validation for Unity. Tag fields with [BuildCheckField], define rules in a single editor window, and block builds when rules fail.",
+  "unity": "2022.3",
+  "unityRelease": "62f2",
+  "author": {
+    "name": "Gameyogi"
+  },
+  "keywords": [
+    "build",
+    "validation",
+    "checklist",
+    "editor",
+    "preprocess"
+  ],
+  "type": "tool",
+  "category": "Editor",
+  "samples": [
+    {
+      "displayName": "Basic Usage",
+      "description": "A sample MonoBehaviour with [BuildCheckField] tags showing how to author and validate fields.",
+      "path": "Samples~/BasicUsage"
+    }
+  ]
+}
