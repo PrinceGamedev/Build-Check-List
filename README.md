@@ -2,23 +2,26 @@
 
 Attribute-driven pre-build validation for Unity.
 
-Tag any serialized field with `[BuildCheckField]`, open **Window → Build Checklist**, define a rule (operator + expected value + severity), select the active panel, and the rule is evaluated automatically before every build. Builds are aborted when an `Error`-severity rule fails.
+Build Checklist lets you mark important `MonoBehaviour` fields, define rules for them in an editor window, and automatically check those rules before a build. In Unity editor builds, the tool asks which panel you want to build with, then validates that panel before the build continues.
 
 ## Requirements
 
-- Unity **2022.3.62f2** or newer
+- Unity 2022.3.62f2 or newer
 
 ## Install
 
-In Unity, open **Window → Package Manager** → **+ ▾** → **Add package from git URL** and paste 
-**` https://github.com/PrinceGamedev/Build-Check-List.git `**
-, or use **Add package from disk** to point at a local checkout.
+In Unity, open **Window > Package Manager**.
 
-## Usage
+Then choose one of these options:
 
-### 1. Tag fields you care about
+- **+ > Add package from git URL** and paste **`https://github.com/PrinceGamedev/Build-Check-List.git`**.
+- **+ > Add package from disk** and select this package folder from a local checkout.
 
-Add `[BuildCheckField]` to any serialized field on a `MonoBehaviour`:
+## Quick Start
+
+### 1. Mark fields
+
+Add `[BuildCheckField]` to serialized fields on a `MonoBehaviour`.
 
 ```csharp
 using Gameyogi.BuildChecklist;
@@ -27,76 +30,148 @@ using UnityEngine;
 public class GameConfig : MonoBehaviour
 {
     [BuildCheckField(Category = "Performance")]
-    public int targetFps;
+    public int targetFps = 60;
 
     [BuildCheckField(Category = "Release Safety",
                      Description = "Cheats must be off for shipping builds.")]
-    public bool enableCheats;
+    public bool enableCheats = false;
 
-    [BuildCheckField]
+    [BuildCheckField(Category = "Audio")]
     public AudioClip themeMusic;
 }
 ```
 
-The attribute only declares that the field is checkable. The actual rule is defined in the window.
+The attribute only makes the field available to the checklist. The rule itself is created in the editor window.
 
-The tool finds every `Component` of the declaring type by scanning **all prefab assets in the project** and **currently-loaded scenes**. During build validation, it also temporarily opens enabled scenes from **Build Settings** so closed build scenes are checked too.
+### 2. Create rules
 
-### 2. Define rules in the window
+Open **Window > Build Checklist**.
 
-Open **Window → Build Checklist**.
+The **Rules** tab shows all fields marked with `[BuildCheckField]`, grouped by category.
 
-Use the **Panel** dropdown in the toolbar to select the active checking panel: `Development`, `Debug`, or `Release`. Each panel remembers its own enabled state, operator, expected value, severity, prefab filter, and message for every rule.
+For each field:
 
-For example, one `int` field can be `60` in Development, `30` in Debug, and `120` in Release. Set it once while each panel is selected; switching panels reloads that panel's saved value automatically.
+1. Enable the rule.
+2. Choose an operator, such as `Equals`, `Min`, `Max`, `Range`, `NotNull`, `NotEmpty`, or `OneOf`.
+3. Set the expected value.
+4. Choose the severity: `Info`, `Warning`, or `Error`.
+5. Optionally set a custom failure message.
+6. Optionally restrict the rule to one prefab or one saved scene object.
 
-You can also select the active build panel from **Project Settings → Build Checklist**.
+Rules are saved in `Assets/BuildChecklist/Rules.asset`.
 
-The **Rules** tab lists every tagged field, grouped by `Category`. For each field:
+### 3. Use panels
 
-1. Toggle the checkbox to enable the rule.
-2. Pick an **Operator** — the dropdown only shows operators valid for the field's type.
-3. Set the **Expected** value (and **Up to** for `Range`, or the **Allowed** list for `OneOf`).
-4. Pick a **Severity**.
-5. Optionally restrict the rule with **Prefab filter** — empty = scans every prefab and currently-loaded scene; set = only that prefab is checked.
-6. Optionally restrict the rule with **Scene object** by selecting a saved scene GameObject in the Hierarchy and clicking **Use selected**. The tool stores the scene path and hierarchy path as strings.
-7. Optionally provide a **Message** to override the default failure text.
+Build Checklist has three panels:
 
-Edits are saved immediately to `Assets/BuildChecklist/Rules.asset`.
+- `Development`
+- `Debug`
+- `Release`
 
-### 3. Run on demand or on build
+Each panel stores its own rule settings. For example, the same field can have different expected values for development builds and release builds.
 
-- **Run Now ▶** in the toolbar evaluates every enabled rule for the active panel against prefabs, currently-loaded scenes, and enabled scenes from **Build Settings**, then switches to the **Results** tab.
-- Triggering a build (File → Build And Run, or batch-mode CI) runs validation automatically against prefabs, currently-loaded scenes, and enabled scenes from **Build Settings**. If any rule with `Error` severity fails, the build is aborted before player code is compiled and the failure is logged to the console.
-- If warning/error issues are found during an interactive build, Unity opens the Build Checklist results UI and cancels the build. Fix or skip issues there, click **Recheck**, then start the build again once the checklist is clean.
-- The Results tab also includes **Fix Selected** and **Fix All Visible** buttons for auto-fixable issues.
+You can change the active panel from:
+
+- The **Panel** dropdown in **Window > Build Checklist**.
+- **Project Settings > Build Checklist**.
+- The build popup shown when starting a build from the Unity editor.
+
+### 4. Run checks manually
+
+Click **Run Now** in the Build Checklist window.
+
+The tool checks the active panel against:
+
+- Prefab assets in the project.
+- Currently loaded scenes.
+- Enabled scenes from **Build Settings**.
+
+Results appear in the **Results** tab. Click a result to ping the object. Double-click a result to open the related script.
+
+### 5. Build with a selected panel
+
+When you press **Build** or **Build And Run** from Unity's Build Settings window, Build Checklist shows a popup:
+
+**Which panel do you want to use for this build?**
+
+Choose:
+
+- **Development**
+- **Debug**
+- **Release**
+
+After you choose a panel, the normal flow continues:
+
+1. The selected panel is saved as the active panel.
+2. The tool evaluates that panel's enabled rules.
+3. If warning or error issues are found, the Results UI opens and the current build is cancelled.
+4. Fix or skip the issues in the checklist window.
+5. Start the build again.
+
+In batch mode, such as CI builds, no popup is shown. The build uses the currently active panel.
+
+## Auto-Fix
+
+Some failed rules can be fixed automatically from the **Results** tab.
+
+Auto-fix is supported for:
+
+- `Equals`
+- `Min`
+- `Max`
+- `Range`
+- `OneOf`
+
+Auto-fix is not supported for:
+
+- `NotNull`
+- `NotEmpty`
+- `NotEquals`
+
+Those operators need a human decision because the package cannot safely guess the correct value.
 
 ## Operators
 
-| Operator | Valid for                              | Notes |
-|----------|----------------------------------------|-------|
-| Equals   | int, float, bool, string, enum, Object | reference equality for Object |
-| NotEquals| int, float, bool, string, enum, Object | reference inequality for Object |
-| Min      | int, float                             | `value >= expected` |
-| Max      | int, float                             | `value <= expected` |
-| Range    | int, float                             | `expected <= value <= expectedMax` |
-| NotNull  | UnityEngine.Object                     | reference must be assigned |
-| NotEmpty | string, arrays / lists                 | length > 0 |
-| OneOf    | int, float, string, enum               | value matches at least one allowed entry |
+| Operator | Valid for | Meaning |
+| --- | --- | --- |
+| `Equals` | int, float, bool, string, enum, Object | Value must equal the expected value. |
+| `NotEquals` | int, float, bool, string, enum, Object | Value must not equal the expected value. |
+| `Min` | int, float, enum | Value must be greater than or equal to expected. |
+| `Max` | int, float, enum | Value must be less than or equal to expected. |
+| `Range` | int, float, enum | Value must be between the lower and upper values. |
+| `NotNull` | Object references | Reference must be assigned. |
+| `NotEmpty` | string, arrays, lists | Value must contain something. |
+| `OneOf` | int, float, string, enum | Value must match one allowed value. |
 
 ## Severity
 
-- **Info / Warning** — logged to the console; build proceeds.
-- **Error** — logged as `Debug.LogError` and the build is aborted via `BuildFailedException`.
+- `Info`: logged only.
+- `Warning`: shown in build review during interactive builds.
+- `Error`: blocks the build until fixed or skipped.
 
-## What happens when a tagged field is renamed?
+## Scene And Prefab Targets
 
-The rule is keyed by `{Type.FullName}::{FieldName}`. If you rename or delete the field, the rule does not silently disappear — it appears in a **Missing fields** section at the bottom of the Rules tab so you can clean it up or re-create it.
+By default, a rule checks every matching component found in prefabs and scenes.
+
+You can narrow a rule to:
+
+- One prefab, using the prefab filter.
+- One saved scene GameObject, using **Use selected** in the rule row.
+
+Scene object filters are stored as the scene path plus the GameObject hierarchy path, so scene object references are not serialized into project assets.
+
+## Missing Fields
+
+Rules are keyed by the field's declaring type and field name.
+
+If a field is renamed or deleted, its rule appears as missing in the Rules tab. You can remove the old rule and create a new one for the renamed field.
 
 ## Sample
 
-A "Basic Usage" sample is shipped with the package — import it via the Package Manager to get a sample `MonoBehaviour` with several tagged fields ready to play with.
+The package includes a **Basic Usage** sample. Import it from Package Manager to get a sample `MonoBehaviour` with fields already marked using `[BuildCheckField]`.
 
-## Status
+## Version
 
-`1.5.0`. See `CHANGELOG.md` for release notes.
+Current version: `1.6.0`
+
+See `CHANGELOG.md` for release notes.
